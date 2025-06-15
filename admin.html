@@ -2,76 +2,57 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Admin Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel - All User Data</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div class="container">
-    <h2>Admin Dashboard</h2>
-
-    <h3>All Users</h3>
-    <ul id="userList"></ul>
-
-    <div id="userData" style="display: none;">
-      <h3>User: <span id="currentUser"></span></h3>
-      <p><strong>Streak:</strong> <span id="streak"></span></p>
-
-      <h4>Code Submissions</h4>
-      <ul id="codeList"></ul>
-    </div>
+    <h2>Admin Dashboard - CodeStreak</h2>
+    <button onclick="downloadData()">Download Full Data</button>
+    <div id="all-data"></div>
   </div>
 
   <script>
-    async function fetchUsers() {
-      const res = await fetch('/admin/users');
-      const users = await res.json();
-
-      const userList = document.getElementById('userList');
-      userList.innerHTML = '';
-
-      users.forEach(user => {
-        const li = document.createElement('li');
-        li.textContent = user;
-        li.style.cursor = 'pointer';
-        li.onclick = () => loadUserData(user);
-        userList.appendChild(li);
-      });
-    }
-
-    async function loadUserData(username) {
-      const res = await fetch(`/admin/user/${username}`);
+    async function fetchAllData() {
+      const res = await fetch("https://codestreak.onrender.com/admin-data");
       const data = await res.json();
-      if (!data.success) return;
 
-      document.getElementById('userData').style.display = 'block';
-      document.getElementById('currentUser').textContent = username;
+      const container = document.getElementById("all-data");
+      container.innerHTML = "";
 
-      const codeList = document.getElementById('codeList');
-      codeList.innerHTML = '';
+      if (data.success) {
+        const users = data.data;
+        for (const username in users) {
+          const userDiv = document.createElement("div");
+          userDiv.style.border = "1px solid #ccc";
+          userDiv.style.margin = "10px";
+          userDiv.style.padding = "10px";
+          userDiv.innerHTML = `<h3>${username}</h3>`;
 
-      const dates = Object.keys(data.codes).sort().reverse();
-      let streak = 0;
-      let today = new Date();
+          const codeList = document.createElement("ul");
+          const codes = users[username];
+          const sorted = Object.entries(codes).sort((a, b) => new Date(b[0]) - new Date(a[0]));
 
-      for (const date of dates) {
-        const code = data.codes[date];
-        const li = document.createElement('li');
-        li.textContent = `${date}: ${code.slice(0, 30)}...`;
-        codeList.appendChild(li);
+          sorted.forEach(([date, code]) => {
+            const li = document.createElement("li");
+            li.textContent = `${date}: ${code.slice(0, 50)}...`;
+            codeList.appendChild(li);
+          });
 
-        const codeDate = new Date(date);
-        if (codeDate.toDateString() === today.toDateString()) {
-          streak++;
-          today.setDate(today.getDate() - 1);
-        } else {
-          break;
+          userDiv.appendChild(codeList);
+          container.appendChild(userDiv);
         }
+      } else {
+        container.textContent = "Failed to fetch data";
       }
-
-      document.getElementById('streak').textContent = `${streak} day streak`;
     }
 
-    fetchUsers();
+    function downloadData() {
+      window.location.href = "https://codestreak.onrender.com/download-details";
+    }
+
+    fetchAllData();
   </script>
 </body>
 </html>
