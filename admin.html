@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <h2>Admin Dashboard</h2>
+
+    <h3>All Users</h3>
+    <ul id="userList"></ul>
+
+    <div id="userData" style="display: none;">
+      <h3>User: <span id="currentUser"></span></h3>
+      <p><strong>Streak:</strong> <span id="streak"></span></p>
+
+      <h4>Code Submissions</h4>
+      <ul id="codeList"></ul>
+    </div>
+  </div>
+
+  <script>
+    async function fetchUsers() {
+      const res = await fetch('/admin/users');
+      const users = await res.json();
+
+      const userList = document.getElementById('userList');
+      userList.innerHTML = '';
+
+      users.forEach(user => {
+        const li = document.createElement('li');
+        li.textContent = user;
+        li.style.cursor = 'pointer';
+        li.onclick = () => loadUserData(user);
+        userList.appendChild(li);
+      });
+    }
+
+    async function loadUserData(username) {
+      const res = await fetch(`/admin/user/${username}`);
+      const data = await res.json();
+      if (!data.success) return;
+
+      document.getElementById('userData').style.display = 'block';
+      document.getElementById('currentUser').textContent = username;
+
+      const codeList = document.getElementById('codeList');
+      codeList.innerHTML = '';
+
+      const dates = Object.keys(data.codes).sort().reverse();
+      let streak = 0;
+      let today = new Date();
+
+      for (const date of dates) {
+        const code = data.codes[date];
+        const li = document.createElement('li');
+        li.textContent = `${date}: ${code.slice(0, 30)}...`;
+        codeList.appendChild(li);
+
+        const codeDate = new Date(date);
+        if (codeDate.toDateString() === today.toDateString()) {
+          streak++;
+          today.setDate(today.getDate() - 1);
+        } else {
+          break;
+        }
+      }
+
+      document.getElementById('streak').textContent = `${streak} day streak`;
+    }
+
+    fetchUsers();
+  </script>
+</body>
+</html>
